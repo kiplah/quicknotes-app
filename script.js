@@ -4,8 +4,14 @@ const noteCategory = document.querySelector('#note-category');
 const notesList = document.querySelector('#notes-list');
 const errorMessage = document.querySelector('#error-message');
 const noteCount = document.querySelector('#note-count');
+const searchInput = document.querySelector('#search-input');
+const clearAllBtn = document.querySelector('#clear-all-btn');
 
-let notes = [];
+let notes = JSON.parse(localStorage.getItem('quicknotes_data')) || [];
+
+function saveNotes() {
+    localStorage.setItem('quicknotes_data', JSON.stringify(notes));
+}
 
 function updateNoteCount() {
     if (notes.length === 0) {
@@ -17,38 +23,52 @@ function updateNoteCount() {
     }
 }
 
-function render() {
+function render(filterText = '') {
     notesList.textContent = ''; // clear without using innerHTML
     
-    notes.forEach(note => {
+    // Toggle clear all button visibility based on whether there are ANY notes at all
+    clearAllBtn.style.display = notes.length > 0 ? 'inline-block' : 'none';
+    
+    const filteredNotes = notes.filter(note => 
+        note.text.toLowerCase().includes(filterText.toLowerCase())
+    );
+    
+    if (filterText && filteredNotes.length === 0) {
         const li = document.createElement('li');
-        li.className = `note-card category-${note.category}`;
-        
-        const pText = document.createElement('p');
-        pText.textContent = note.text;
-        
-        const metaDiv = document.createElement('div');
-        metaDiv.className = 'note-meta';
-        
-        const catDateSpan = document.createElement('span');
-        catDateSpan.textContent = `[${note.category}] - ${note.createdAt}`;
-        
-        const deleteBtn = document.createElement('button');
-        deleteBtn.textContent = 'Delete';
-        deleteBtn.className = 'delete-btn';
-        deleteBtn.addEventListener('click', () => {
-            notes = notes.filter(n => n.id !== note.id);
-            render();
-        });
-        
-        metaDiv.appendChild(catDateSpan);
-        metaDiv.appendChild(deleteBtn);
-        
-        li.appendChild(pText);
-        li.appendChild(metaDiv);
-        
+        li.textContent = "No notes match your search.";
         notesList.appendChild(li);
-    });
+    } else {
+        filteredNotes.forEach(note => {
+            const li = document.createElement('li');
+            li.className = `note-card category-${note.category}`;
+            
+            const pText = document.createElement('p');
+            pText.textContent = note.text;
+            
+            const metaDiv = document.createElement('div');
+            metaDiv.className = 'note-meta';
+            
+            const catDateSpan = document.createElement('span');
+            catDateSpan.textContent = `[${note.category}] - ${note.createdAt}`;
+            
+            const deleteBtn = document.createElement('button');
+            deleteBtn.textContent = 'Delete';
+            deleteBtn.className = 'delete-btn';
+            deleteBtn.addEventListener('click', () => {
+                notes = notes.filter(n => n.id !== note.id);
+                saveNotes();
+                render(searchInput.value);
+            });
+            
+            metaDiv.appendChild(catDateSpan);
+            metaDiv.appendChild(deleteBtn);
+            
+            li.appendChild(pText);
+            li.appendChild(metaDiv);
+            
+            notesList.appendChild(li);
+        });
+    }
     
     updateNoteCount();
 }
@@ -79,9 +99,23 @@ noteForm.addEventListener('submit', (e) => {
     };
     
     notes.push(newNote);
+    saveNotes();
     noteInput.value = '';
     
-    render();
+    render(searchInput.value);
+});
+
+searchInput.addEventListener('input', (e) => {
+    render(e.target.value);
+});
+
+clearAllBtn.addEventListener('click', () => {
+    if (confirm("Delete all notes?")) {
+        notes = [];
+        saveNotes();
+        searchInput.value = '';
+        render();
+    }
 });
 
 render();
