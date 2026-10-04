@@ -2,11 +2,23 @@ const noteForm = document.querySelector('#note-form');
 const noteInput = document.querySelector('#note-input');
 const noteCategory = document.querySelector('#note-category');
 const notesList = document.querySelector('#notes-list');
+const errorMessage = document.querySelector('#error-message');
+const noteCount = document.querySelector('#note-count');
 
 let notes = [];
 
+function updateNoteCount() {
+    if (notes.length === 0) {
+        noteCount.textContent = "You have no notes yet.";
+    } else if (notes.length === 1) {
+        noteCount.textContent = "You have 1 note.";
+    } else {
+        noteCount.textContent = `You have ${notes.length} notes.`;
+    }
+}
+
 function render() {
-    notesList.innerHTML = ''; // We can't use innerHTML for user text, but we can clear it this way or with textContent = ''
+    notesList.textContent = ''; // clear without using innerHTML
     
     notes.forEach(note => {
         const li = document.createElement('li');
@@ -24,6 +36,10 @@ function render() {
         const deleteBtn = document.createElement('button');
         deleteBtn.textContent = 'Delete';
         deleteBtn.className = 'delete-btn';
+        deleteBtn.addEventListener('click', () => {
+            notes = notes.filter(n => n.id !== note.id);
+            render();
+        });
         
         metaDiv.appendChild(catDateSpan);
         metaDiv.appendChild(deleteBtn);
@@ -33,6 +49,8 @@ function render() {
         
         notesList.appendChild(li);
     });
+    
+    updateNoteCount();
 }
 
 noteForm.addEventListener('submit', (e) => {
@@ -41,9 +59,21 @@ noteForm.addEventListener('submit', (e) => {
     const text = noteInput.value;
     const category = noteCategory.value;
     
+    if (text.trim().length === 0) {
+        errorMessage.textContent = "Please type a note first.";
+        return;
+    }
+    
+    if (text.length > 200) {
+        errorMessage.textContent = "Notes must be 200 characters or fewer.";
+        return;
+    }
+    
+    errorMessage.textContent = ""; // clear error
+    
     const newNote = {
         id: Date.now(),
-        text: text,
+        text: text.trim(),
         category: category,
         createdAt: new Date().toLocaleString()
     };
